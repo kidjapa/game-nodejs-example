@@ -8,23 +8,36 @@
 </head>
 <body>
     
+    <div id='signDiv' >
+        <label for='signDiv-username'>Username: </label>
+        <input id='signDiv-username' type='text'/>
 
-    <canvas
-        id="ctx"
-        width="500"
-        height="500"
-        style="border: 1px solid black;"
-    ></canvas>
-
-
-    <div id='chat-text' style='width: 500px; height: 100px; overflow-y: scroll;'>
-
-        <div>Hello</div>
-
+        <label for='signDiv-password'>Password: </label>
+        <input id='signDiv-password' type="text">
+        
+        <button id='sign-in'>Sign In</button>
+        <button id='sign-up'>Sign Up</button>
     </div>
-    <form action="" id='chat-form'>
-        <input type="text" id='chat-input' style="width: 500px;">
-    </form>
+
+    <div id='gameDiv' style="display: none;">
+        <canvas
+            id="ctx"
+            width="500"
+            height="500"
+            style="border: 1px solid black;"
+        ></canvas>
+        <div id='chat-text' style='width: 500px; height: 100px; overflow-y: scroll;'>
+            <div>Hello</div>
+        </div>
+        <form action="" id='chat-form'>
+            <input type="text" id='chat-input' style="width: 500px;">
+        </form>
+    </div>
+
+
+
+    
+
 
     <script src='https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.dev.js'></script>
     <script src='client/js/client.js'></script>

@@ -6,7 +6,49 @@ const KEY_DOWN = 83;
 const KEY_LEFT = 65;
 const KEY_RIGHT = 68;
 
+// Login
+const signDiv = document.getElementById('signDiv');
+const signDivUsername = document.getElementById('signDiv-username');
+const signDivPassword = document.getElementById('signDiv-password');
+const signDivBtSignIn = document.getElementById('sign-in');
+const signDivBtSignUp = document.getElementById('sign-up');
+const gameDiv = document.getElementById('gameDiv');
 
+
+signDivBtSignIn.onclick = function(){
+    socket.emit('signin',{username: signDivUsername.value, password: signDivPassword.value});
+};
+signDivBtSignUp.onclick = function(){
+    socket.emit('signup',{username: signDivUsername.value, password: signDivPassword.value});
+};
+
+
+socket.on('signInResponse',function(data){
+    console.log(data);
+    if(data.succes){
+        signDiv.style.display = 'none';
+        gameDiv.style.display = 'inline-block';
+    }else{
+        if(typeof data.message !== 'undefined')
+            alert(data.message);
+        else
+            alert('sign in unsuccesussul');
+    }
+});
+
+socket.on('signUpResponse',function(data){
+    if(data.succes){
+        if(typeof data.message !== 'undefined')
+            alert(data.message);
+        else
+            alert('Usuario criado com sucesso!');
+    }else{
+        alert('sign up unsuccesussul');
+    }
+});
+
+
+// Game
 const chatText = document.getElementById('chat-text');
 const chatInput = document.getElementById('chat-input');
 const chatForm = document.getElementById('chat-form');

@@ -87,7 +87,6 @@ var Player = function(id){
         var b = Bullet(pt,angle);
         b.x = self.x;
         b.y = self.y;
-        console.log('Angle: '+angle);
     };
 
     //UPDATE SPEED OF PLAYER
@@ -117,7 +116,6 @@ Player.onConnect = function(socket){
 
     //Create a player and set the attributes
     var player = Player(socket.id);
-    console.log('Creating player: '+socket.id);
 
     //----------------------
     //Set the player Events
@@ -139,7 +137,6 @@ Player.onConnect = function(socket){
 
 };
 Player.onDisconnect = function(socket){
-    console.log('Deleting player: '+socket.id);
     delete Player.list[socket.id];
 };
 
@@ -209,6 +206,24 @@ Bullet.update = function(){
 
 };
 
+const USERS = {
+    'bob': 'asd',
+    'b': 'b'
+};
+
+const isValidPassword = function(data){
+    return USERS[data.username] === data.password;
+};
+
+const isUserNameTaken = function(data){
+    return USERS[data.username];
+};
+
+const addUser = function(data){
+    USERS[data.username] = data.password;
+    console.log(USERS);
+};
+
 
 var io = require('socket.io')(serv,{});
 io.sockets.on('connection',function(socket){
@@ -216,7 +231,24 @@ io.sockets.on('connection',function(socket){
     socket.id = Math.random();
     SOCKET_LIST[socket.id] = socket;
 
-    Player.onConnect(socket);
+    socket.on('signin',function(data){
+        if(isValidPassword(data)){
+            Player.onConnect(socket);
+            socket.emit('signInResponse',{succes: true});
+        }else{
+            socket.emit('signInResponse',{succes: false});
+        }
+        Player.onConnect(socket);
+    });
+
+    socket.on('signup',function(data){
+        if(isValidPassword(data)){
+            socket.emit('signInResponse',{succes: false,message: 'Usuário já existe.'});
+        }else{ // Make User
+            socket.emit('signInResponse',{succes: true,message: 'Usuário criado com sucesso!'});
+            addUser(data);
+        }
+    });
 
     socket.on('disconnect',function(){
         delete SOCKET_LIST[socket.id];
@@ -235,8 +267,6 @@ io.sockets.on('connection',function(socket){
 
 });
 
-
-
 setInterval(function(){
     var pack = {
         player: Player.update(),
@@ -249,4 +279,3 @@ setInterval(function(){
     }
 
 },1000/25);
-
