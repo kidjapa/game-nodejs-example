@@ -7,9 +7,9 @@ const KEY_LEFT = 65;
 const KEY_RIGHT = 68;
 
 
-var chatText = document.getElementById('chat-text');
-var chatInput = document.getElementById('chat-input');
-var chatForm = document.getElementById('chat-form');
+const chatText = document.getElementById('chat-text');
+const chatInput = document.getElementById('chat-input');
+const chatForm = document.getElementById('chat-form');
 
 
 ctx.font = '30px Arial';
@@ -39,24 +39,39 @@ chatForm.onsubmit = function(e){
 //send player att position
 document.onkeydown = function(e){
     let key = e.keyCode;
-    console.log('KeyCode',key);
-    if(key == KEY_UP)
+    if(key === KEY_UP)
         socket.emit('keyPress',{inputId: 'UP',state: true});
-    if(key == KEY_DOWN)
+    if(key === KEY_DOWN)
         socket.emit('keyPress',{inputId: 'DOWN',state: true});
-    if(key == KEY_LEFT)
+    if(key === KEY_LEFT)
         socket.emit('keyPress',{inputId: 'LEFT',state: true});
-    if(key == KEY_RIGHT)
+    if(key === KEY_RIGHT)
         socket.emit('keyPress',{inputId: 'RIGHT',state: true});
-}
+};
 document.onkeyup = function(e){
     let key = e.keyCode;
-    if(key == KEY_UP)
+    if(key === KEY_UP)
         socket.emit('keyPress',{inputId: 'UP',state: false});
-    if(key == KEY_DOWN)
+    if(key === KEY_DOWN)
         socket.emit('keyPress',{inputId: 'DOWN',state: false});
-    if(key == KEY_LEFT)
+    if(key === KEY_LEFT)
         socket.emit('keyPress',{inputId: 'LEFT',state: false});
-    if(key == KEY_RIGHT)
+    if(key === KEY_RIGHT)
         socket.emit('keyPress',{inputId: 'RIGHT',state: false});
-}
+};
+
+//Attack
+document.onmousedown = function(event){
+    socket.emit('keyPress',{inputId: 'ATTACK', state: true});
+};
+document.onmouseup = function(event){
+    socket.emit('keyPress',{inputId: 'ATTACK', state: false});
+};
+
+document.onmousemove = function(event){
+  let x = -250 + event.clientX-8;
+  let y = -250 + event.clientY-8;
+
+  let angle = Math.atan2(y,x) / Math.PI * 180;
+  socket.emit('keyPress',{inputId:'mouseAngle',state: angle})
+};

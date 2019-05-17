@@ -17,10 +17,11 @@ app.get('/', function(req, res){
 app.use('/client',express.static(__dirname + '/client'));
 serv.listen(2000); //listen port 2000
 
-console.log('#########~~~#########');
-console.log('## Server Started  ##');
-console.log('#########~~~#########');
+console.log('#########~~~####################');
+console.log('## Server Started  Port: 2000 ##');
+console.log('#########~~~####################');
 
+const EMIT_ADD_TO_CHAT = "addToChat";
 
 var SOCKET_LIST = {};
 var PLAYER_LIST = {};
@@ -32,16 +33,26 @@ var Entity = function(){
         spdX: 0,
         spdY: 0,
         id:""
-    }
+    };
     self.update = function(){
         self.updatePosition();
-    }
+    };
     self.updatePosition = function(){
         self.x += self.spdX;
         self.y += self.spdY;
-    }
+    };
+
+    /**
+     * @param pt Point x | y
+     * @returns {number}
+     */
+    self.distance = function(pt){
+      return Math.sqrt(Math.pow(self.x-pt.x,2) + Math.pow(self.y-pt.y,2) );
+    };
+
+
     return self;
-}
+};
 
 
 var Player = function(id){
@@ -55,6 +66,8 @@ var Player = function(id){
     self.pressingLeft = false;
     self.pressingUp = false;
     self.pressingDown = false;
+    self.pressingAttack = false;
+    self.mouseAngle = 0;
     self.maxSpeed = 10;
 
     //Save the entity update
@@ -64,7 +77,18 @@ var Player = function(id){
     self.update = function(){
         self.updateSpd();
         super_update();
-    }
+
+        if(self.pressingAttack){
+            self.shootBullet(self.id, self.mouseAngle);
+        }
+    };
+
+    self.shootBullet = function(pt, angle){
+        var b = Bullet(pt,angle);
+        b.x = self.x;
+        b.y = self.y;
+        console.log('Angle: '+angle);
+    };
 
     //UPDATE SPEED OF PLAYER
     self.updateSpd = function(){
@@ -82,13 +106,12 @@ var Player = function(id){
             self.spdY = +self.maxSpeed;
         else
             self.spdY = 0;
-    }
-
+    };
 
     Player.list[id] = self;
     return self;
-}
-Player.list = {}
+};
+Player.list = {};
 
 Player.onConnect = function(socket){
 
@@ -100,22 +123,25 @@ Player.onConnect = function(socket){
     //Set the player Events
     //----------------------
     socket.on('keyPress',function(data){
-        console.log(data);
-        if(data.inputId == 'UP')
+        if(data.inputId === 'UP')
             player.pressingUp = data.state;
-        if(data.inputId == 'DOWN')
+        if(data.inputId === 'DOWN')
             player.pressingDown = data.state;
-        if(data.inputId == 'LEFT')
+        if(data.inputId === 'LEFT')
             player.pressingLeft = data.state;
-        if(data.inputId == 'RIGHT')
+        if(data.inputId === 'RIGHT')
             player.pressingRight = data.state;
+        if(data.inputId === 'ATTACK')
+            player.pressingAttack = data.state;
+        if(data.inputId === 'mouseAngle')
+            player.mouseAngle = data.state;
     });
 
-}
+};
 Player.onDisconnect = function(socket){
     console.log('Deleting player: '+socket.id);
     delete Player.list[socket.id];
-}
+};
 
 Player.update = function(){
     
@@ -133,15 +159,15 @@ Player.update = function(){
     }
     return pack;
 
-}
+};
 
 
-var Bullet = function(angle){
+var Bullet = function(parent,angle){
     var self = Entity();
     self.id = Math.random();
     self.spdX = Math.cos(angle/180*Math.PI)*10;
     self.spdY = Math.sin(angle/180*Math.PI)*10;
-
+    self.parent = parent;
     self.timer = 0;
     self.toRemove = false;
     
@@ -150,23 +176,30 @@ var Bullet = function(angle){
         if(self.timer++ > 100)
             self.toRemove = true;
         super_update();
+
+        for(let i in Player.list){
+            let p = Player.list[i];
+            if(self.distance(p) < 32 && self.parent !== p.id){
+                //TODO: Handdle --hp
+                self.toRemove = true;
+            }
+        }
+
     };
     Bullet.list[self.id] = self;
     return self;
-}
+};
 Bullet.list = {};
 Bullet.update = function(){
-
-    if(Math.random() < 0.1){
-        Bullet(Math.random()*360);
-    }
     
     var pack = [];
     for(var i in Bullet.list){
         var bullet = Bullet.list[i];
-
         //Update the Bullet position
         bullet.update();
+        if(bullet.toRemove === true){
+            delete Bullet.list[i];
+        }
         pack.push({
             x: bullet.x,
             y: bullet.y
@@ -174,7 +207,7 @@ Bullet.update = function(){
     }
     return pack;
 
-}
+};
 
 
 var io = require('socket.io')(serv,{});
@@ -195,7 +228,7 @@ io.sockets.on('connection',function(socket){
         let playerName = (''+socket.id).slice(2,7);
 
         for(var i in SOCKET_LIST){
-            SOCKET_LIST[i].emit('addToChat',playerName+": "+text);
+            SOCKET_LIST[i].emit(EMIT_ADD_TO_CHAT,playerName+": "+text);
         }
         
     });
