@@ -223,7 +223,7 @@ const USERS = {
  */
 const isValidPassword = function(data,callback){
     console.log('isValidPassword',data.password);
-    db.account.find(function(err,res){
+    db.account.find({username: 'bruno'},function(err,res){
         console.log(res);
     });
 
