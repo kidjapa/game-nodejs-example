@@ -4,6 +4,11 @@
  * Data: 04/05/2019
  * */
 
+const mongoDb = require('mongojs');
+const urlConnect = 'mongodb://kidjapa:Hu7p5s7q@mygame-shard-00-00-5t9ax.mongodb.net:27017,mygame-shard-00-01-5t9ax.mongodb.net:27017,mygame-shard-00-02-5t9ax.mongodb.net:27017/myGame?ssl=true&replicaSet=myGame-shard-0&authSource=admin&retryWrites=true';
+const urlLocalhost = 'localhost:27017/myGame';
+const db = mongoDb(urlLocalhost, ['account','progress']);
+
 var express = require('express'); //Call the express library to listen game.
 var app = express(); //set entire express to app variable
 
@@ -211,17 +216,55 @@ const USERS = {
     'b': 'b'
 };
 
-const isValidPassword = function(data){
-    return USERS[data.username] === data.password;
+/**
+ * Verifica se os dados de passowrd e usuario estão corretos
+ * @param {object} data data.username && data.password
+ * @param {function} callback return true|false
+ */
+const isValidPassword = function(data,callback){
+    console.log('isValidPassword',data.password);
+    db.account.find(function(err,res){
+        console.log(res);
+    });
+
+    // db.account.find({username: data.username,password: data.password},function(err,res){
+    //     console.log(res);
+    //     if(res.length > 0)
+    //         callback(true);
+    //     else
+    //         callback(false);
+    // });
 };
 
-const isUserNameTaken = function(data){
-    return USERS[data.username];
+/**
+ * Verificar se o usuario já existe
+ * @param {object} data data.username && data.password 
+ * @param {function} callback return true|false
+ */
+const isUserNameTaken = function(data,callback){
+    db.account.find({username: data.username},function(err,res){
+        if(res.length > 0)
+            callback(true);
+        else
+            callback(false);
+    });
 };
 
-const addUser = function(data){
-    USERS[data.username] = data.password;
-    console.log(USERS);
+/**
+ * Adicionar um usuario ao database
+ * @param {object} data data.username && data.password
+ * @param {function} callback
+ */
+const addUser = function(data, callback){
+    db.account.insert({
+        username: data.username,
+        password: data.password
+    },function(err,res){
+        if(err === null)
+            callback(true);
+        else
+            callback(false);
+    });
 };
 
 
@@ -232,22 +275,33 @@ io.sockets.on('connection',function(socket){
     SOCKET_LIST[socket.id] = socket;
 
     socket.on('signin',function(data){
-        if(isValidPassword(data)){
-            Player.onConnect(socket);
-            socket.emit('signInResponse',{succes: true});
-        }else{
-            socket.emit('signInResponse',{succes: false});
-        }
-        Player.onConnect(socket);
+
+        isValidPassword(data,function(res){
+            if(res){
+                Player.onConnect(socket);
+                socket.emit('signInResponse',{succes: true});
+            }else{
+                socket.emit('signInResponse',{succes: false});
+            }
+        });
+
     });
 
     socket.on('signup',function(data){
-        if(isValidPassword(data)){
-            socket.emit('signInResponse',{succes: false,message: 'Usuário já existe.'});
-        }else{ // Make User
-            socket.emit('signInResponse',{succes: true,message: 'Usuário criado com sucesso!'});
-            addUser(data);
-        }
+
+        isUserNameTaken(data, function(res){
+            if(res){
+                socket.emit('signUpResponse',{succes: false,message: 'Usuário já existe.'});
+            }else{ // Make User
+                addUser(data, function(res){
+                    if(res)
+                        socket.emit('signUpResponse',{succes: true,message: 'Usuário criado com sucesso!'});
+                    else
+                        socket.emit('signUpResponse',{succes: false,message: 'ops, algo de errado aconteceu. Tente novamente mais tarde!'});
+                });
+            }
+        });
+
     });
 
     socket.on('disconnect',function(){

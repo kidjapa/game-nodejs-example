@@ -43,7 +43,10 @@ socket.on('signUpResponse',function(data){
         else
             alert('Usuario criado com sucesso!');
     }else{
-        alert('sign up unsuccesussul');
+        if(typeof data.message !== 'undefined')
+            alert(data.message);
+        else
+            alert('sign up unsuccesussul');
     }
 });
 
